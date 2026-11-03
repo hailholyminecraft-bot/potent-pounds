@@ -11,12 +11,20 @@ repositories {
 }
 
 dependencies {
-    // Pin to a specific build (e.g. 26.2.build.116) if you want reproducible builds.
     compileOnly("io.papermc.paper:paper-api:26.2.build.+")
 }
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}
+
+sourceSets {
+    main {
+        java.setSrcDirs(listOf("."))
+        java.include("*.java")
+        resources.setSrcDirs(listOf("."))
+        resources.include("plugin.yml", "config.yml")
+    }
 }
 
 tasks {
