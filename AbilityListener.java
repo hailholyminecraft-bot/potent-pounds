@@ -11,10 +11,12 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
@@ -47,15 +49,17 @@ public final class AbilityListener implements Listener {
     private final ArmorDowngrade armor;
     private final BarrierField barrier;
     private final NametagManager nametags;
+    private final LocatorBarManager locator;
     private final Map<String, Long> cooldowns = new HashMap<>();
 
     public AbilityListener(PotendPoundPlugin plugin, PotendItem items, ArmorDowngrade armor,
-                           BarrierField barrier, NametagManager nametags) {
+                           BarrierField barrier, NametagManager nametags, LocatorBarManager locator) {
         this.plugin = plugin;
         this.items = items;
         this.armor = armor;
         this.barrier = barrier;
         this.nametags = nametags;
+        this.locator = locator;
     }
 
     // ------------------------------------------------------------------ abilities
@@ -108,7 +112,7 @@ public final class AbilityListener implements Listener {
     }
 
     private void tryRend(Player user, Player target) {
-        double cd = plugin.getConfig().getDouble("downgrade.cooldown-seconds", 12.0);
+        double cd = plugin.getConfig().getDouble("downgrade.cooldown-seconds", 50.0);
         String key = user.getUniqueId() + ":rend";
         if (!ready(user, key, "Rend Armor", cd)) return;
         if (!armor.apply(target)) {
@@ -123,7 +127,7 @@ public final class AbilityListener implements Listener {
     }
 
     private void tryBarrier(Player user) {
-        double cd = plugin.getConfig().getDouble("barrier.cooldown-seconds", 25.0);
+        double cd = plugin.getConfig().getDouble("barrier.cooldown-seconds", 30.0);
         if (!ready(user, user.getUniqueId() + ":barrier", "Fortress of Wind", cd)) return;
         user.sendActionBar(MM.deserialize("<gradient:#ffffff:#777780>Fortress of Wind</gradient>"));
         barrier.activate(user);
@@ -198,12 +202,39 @@ public final class AbilityListener implements Listener {
         e.getView().setRepairCost(Math.max(1, e.getView().getRepairCost()) + next * 2);
     }
 
+    // ------------------------------------------------------------------ kills grow Density
+
+    @EventHandler
+    public void onKill(EntityDeathEvent e) {
+        LivingEntity victim = e.getEntity();
+        if (!(victim instanceof Player) && !plugin.getConfig().getBoolean("density.count-mobs", false)) return;
+        Player killer = victim.getKiller();
+        if (killer == null || killer.equals(victim)) return;
+        ItemStack weapon = killer.getInventory().getItemInMainHand();
+        if (!items.isPotend(weapon)) return;
+
+        int max = plugin.getConfig().getInt("density.max", 6);
+        int cur = weapon.getEnchantmentLevel(Enchantment.DENSITY);
+        if (cur >= max) {
+            killer.sendActionBar(MM.deserialize("<gray>Density <white>" + cur + "</white><dark_gray>/</dark_gray>" + max + " <dark_gray>(max)"));
+            return;
+        }
+        ItemStack updated = weapon.clone();
+        updated.addUnsafeEnchantment(Enchantment.DENSITY, cur + 1);
+        killer.getInventory().setItemInMainHand(updated);
+        killer.sendActionBar(MM.deserialize("<gradient:#ffffff:#777780>Density +1</gradient> <dark_gray>» <white>" + (cur + 1) + "<dark_gray>/</dark_gray>" + max));
+        Location l = killer.getLocation().add(0, 1, 0);
+        killer.getWorld().spawnParticle(Particle.ENCHANTED_HIT, l, 30, 0.5, 0.7, 0.5, 0.3);
+        killer.playSound(killer.getLocation(), Sound.BLOCK_ANVIL_USE, 0.6f, 1.4f);
+    }
+
     // ------------------------------------------------------------------ armor safety net
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         armor.sweep(p, true);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> locator.apply(p), 5L);
         String url = plugin.getConfig().getString("resource-pack.url", "");
         if (url != null && !url.isBlank()) {
             String sha = plugin.getConfig().getString("resource-pack.sha1", "");
@@ -221,6 +252,7 @@ public final class AbilityListener implements Listener {
         armor.sweep(p, true);
         barrier.stop(p.getUniqueId());
         nametags.leave(p);
+        locator.reset(p);
     }
 
     @EventHandler

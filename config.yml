@@ -1,23 +1,21 @@
 # ---------------------------------------------------------------
-#  Potend Pound
+#  Potent Pound
 #  Text uses MiniMessage: https://docs.advntr.dev/minimessage/
 # ---------------------------------------------------------------
 
 resource-pack:
   # Optional: host PotendPound-ResourcePack.zip somewhere and the plugin sends it on join.
-  # Leave url empty if you load the pack another way (server.properties, client, etc.).
   url: ""
   sha1: ""
 
 item:
-  # <font:potendpound:potend> is the custom rune font from the resource pack.
-  # Without the pack it falls back to the normal font, so the name still reads fine.
-  name: "<!italic><font:potendpound:potend><gradient:#ffffff:#a3a3ad:#3d3d46>Potend Pound</gradient></font>"
-  use-custom-model: true       # needs the resource pack (item model potendpound:potend_pound)
-  disable-shields: true        # axe behaviour: a hit disables shields
+  # <font:potendpound:potend> is the custom font from the resource pack (falls back to the normal font without it).
+  name: "<!italic><font:potendpound:potend><gradient:#ffffff:#a3a3ad:#3d3d46>Potent Pound</gradient></font>"
+  use-custom-model: true
+  disable-shields: true
   durability: 2031
-  attack-damage: 9.0           # +1 base = 10 (netherite-axe level); Sharpness VII adds on top
-  attack-speed: -3.0           # = 1.0 attacks/sec (axe-like)
+  attack-damage: 9.0           # +1 base = 10
+  attack-speed: -2.4           # = 1.6 attacks/sec, the same cooldown as a sword
   lore:
     - "<gradient:#f2f2f8:#6f6f7a>✦ Legendary Axe-Mace ✦</gradient>"
     - "<dark_gray><st>                                    </st>"
@@ -34,28 +32,39 @@ item:
     - "<gray>  every entity away and holds them at bay."
     - ""
     - "<dark_gray>▸ <gradient:#ffffff:#8a8a95><b>TITAN'S SLAM</b></gradient> <dark_gray>(<gray>Fall + Strike<dark_gray>)"
-    - "<gray>  Crash down like a mace. Hungry for <white>Density</white>"
-    - "<gray>  and <white>Wind Burst</white>."
+    - "<gray>  Crash down like a mace. Every <white>kill</white> grows its"
+    - "<gray>  <white>Density</white> by one, up to level <white>{density}</white>."
     - "<dark_gray><st>                                    </st>"
     - "<dark_gray>“<gray>Let the sky remember its weight.<dark_gray>”"
 
 downgrade:
   range: 20.0
   duration-seconds: 10
-  cooldown-seconds: 12.0
-  # Highest tier first. Each hit moves a piece one step down this list.
+  cooldown-seconds: 50.0
   tiers: [NETHERITE, DIAMOND, IRON, CHAINMAIL, GOLDEN, LEATHER]
 
 barrier:
-  half-size: 3.5               # box is (2*half-size) blocks wide/tall
+  half-size: 3.5
   duration-seconds: 6
-  cooldown-seconds: 25.0
-  burst-strength: 1.8          # initial shockwave
-  hold-strength: 0.7           # push while the box is up
+  cooldown-seconds: 30.0
+  burst-strength: 1.8
+  hold-strength: 0.7
+
+density:
+  max: 6                       # the weapon starts with no Density and gains +1 per kill up to this
+  count-mobs: false            # false = only player kills count, true = any kill counts
+
+locator-bar:
+  # Players only see the locator bar while a Dragon Egg is in their inventory.
+  # (Uses the waypoint_receive_range attribute; the locatorBar game rule must stay on.)
+  enabled: true
 
 nametag:
   enabled: true
-  holding-only: false          # false = any Potend Pound in inventory, true = must be in a hand
-  name-color: BLACK            # colour of the name itself (try DARK_GRAY if black is hard to read)
-  prefix: "<gray>✦ "           # shown in grey around the black name
+  holding-only: false
+  name-color: DARK_GRAY        # dark grey name...
+  prefix: "<gray>✦ "           # ...with grey ✦ around it
   suffix: " <gray>✦"
+
+altar:
+  knockback: true              # harmless push when the altar explodes (no damage is ever dealt)

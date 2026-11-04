@@ -2,17 +2,20 @@ name: PotendPound
 version: ${version}
 main: net.potendpound.PotendPoundPlugin
 api-version: '26.2'
-description: The Potend Pound - an axe/mace hybrid with armor-rending and a wind barrier.
+description: The Potent Pound - an axe/mace hybrid with armor-rending, a wind barrier and a ruined trial-chamber altar.
 commands:
   potendpound:
-    description: Give the Potend Pound or reload the config
-    usage: /potendpound <give [player]|reload>
+    description: Give the Potent Pound, reload, or build the ruined trial chamber
+    usage: /potendpound <give [player]|reload|chamber|undo>
     aliases: [pp]
     permission: potendpound.give
 permissions:
   potendpound.give:
     description: Use /potendpound
     default: op
+  potendpound.chamber:
+    description: Build / undo the ruined trial chamber
+    default: op
   potendpound.use:
-    description: Use the Potend Pound's abilities
+    description: Use the Potent Pound's abilities
     default: true

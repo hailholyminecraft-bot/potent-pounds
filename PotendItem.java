@@ -42,13 +42,14 @@ public final class PotendItem {
         ItemStack item = new ItemStack(Material.MACE);
         ItemMeta meta = item.getItemMeta();
 
-        meta.itemName(MM.deserialize(cfg.getString("item.name", "Potend Pound")));
+        meta.itemName(MM.deserialize(cfg.getString("item.name", "Potent Pound")));
 
         String range = String.valueOf((int) cfg.getDouble("downgrade.range", 20));
         String dur = String.valueOf(cfg.getInt("downgrade.duration-seconds", 10));
+        String dens = String.valueOf(cfg.getInt("density.max", 6));
         List<Component> lore = new ArrayList<>();
         for (String line : cfg.getStringList("item.lore")) {
-            lore.add(MM.deserialize("<!italic>" + line.replace("{range}", range).replace("{duration}", dur)));
+            lore.add(MM.deserialize("<!italic>" + line.replace("{range}", range).replace("{duration}", dur).replace("{density}", dens)));
         }
         meta.lore(lore);
 
@@ -62,7 +63,7 @@ public final class PotendItem {
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
         meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
                 NamespacedKey.minecraft("base_attack_speed"),
-                cfg.getDouble("item.attack-speed", -3.0),
+                cfg.getDouble("item.attack-speed", -2.4),
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         if (meta instanceof Damageable d) {

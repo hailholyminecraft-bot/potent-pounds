@@ -42,7 +42,7 @@ public final class NametagManager {
         if (stale != null) stale.unregister();
         team = board.registerNewTeam(TEAM);
         team.color(NamedTextColor.NAMES.valueOr(
-                cfg.getString("nametag.name-color", "BLACK").toLowerCase(Locale.ROOT), NamedTextColor.BLACK));
+                cfg.getString("nametag.name-color", "DARK_GRAY").toLowerCase(Locale.ROOT), NamedTextColor.DARK_GRAY));
         team.prefix(MM.deserialize(cfg.getString("nametag.prefix", "<gray>✦ ")));
         team.suffix(MM.deserialize(cfg.getString("nametag.suffix", " <gray>✦")));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::update, 20L, 10L);
