@@ -3,4 +3,4 @@
 Upload every file in this folder to the root of your GitHub repo (replace the old ones).
 The "Build jar" workflow runs on every upload -> Actions -> latest run -> Artifacts -> PotendPound-jar.
 
-Commands (op): /potendpound give [player] | reload | chamber | undo
+Commands (op): /potentpound gui | give [player] | reload | chamber | undo   (aliases: /potendpound, /pp)

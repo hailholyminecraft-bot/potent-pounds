@@ -49,12 +49,16 @@ public final class PotendItem {
         String dens = String.valueOf(cfg.getInt("density.max", 6));
         List<Component> lore = new ArrayList<>();
         for (String line : cfg.getStringList("item.lore")) {
-            lore.add(MM.deserialize("<!italic>" + line.replace("{range}", range).replace("{duration}", dur).replace("{density}", dens)));
+            lore.add(MM.deserialize("<!italic>" + line.replace("{range}", range).replace("{duration}", dur).replace("{density}", dens)
+                    .replace("{throw_range}", String.valueOf((int) cfg.getDouble("throw.range", 20)))
+                    .replace("{throw_hearts}", String.valueOf(cfg.getDouble("throw.damage-hearts", 3.0)).replace(".0", ""))
+                    .replace("{crits}", String.valueOf(cfg.getInt("combo.crits-needed", 7)))));
         }
         meta.lore(lore);
 
         // Sharpness 7 by default. Density / Wind Burst are added by the player (anvil).
-        meta.addEnchant(Enchantment.SHARPNESS, 7, true);
+        int sharp = cfg.getInt("item.sharpness", 7);
+        if (sharp > 0) meta.addEnchant(Enchantment.SHARPNESS, sharp, true);
 
         // Axe-like stats (same ids vanilla uses, so the tooltip shows them as base stats).
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
@@ -82,6 +86,19 @@ public final class PotendItem {
                     Weapon.weapon().itemDamagePerAttack(1).disableBlockingForSeconds(5.0f).build());
         }
         return item;
+    }
+
+    /** A fresh weapon with the current config, keeping the old one's non-Sharpness enchants and wear. */
+    public ItemStack rebuild(ItemStack old) {
+        ItemStack fresh = create();
+        ItemMeta fm = fresh.getItemMeta();
+        ItemMeta om = old.getItemMeta();
+        for (var en : om.getEnchants().entrySet()) {
+            if (!en.getKey().equals(Enchantment.SHARPNESS)) fm.addEnchant(en.getKey(), en.getValue(), true);
+        }
+        if (om instanceof Damageable od && fm instanceof Damageable fd) fd.setDamage(od.getDamage());
+        fresh.setItemMeta(fm);
+        return fresh;
     }
 
     public boolean isPotend(ItemStack item) {

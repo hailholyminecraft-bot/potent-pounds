@@ -23,6 +23,8 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
     private NametagManager nametags;
     private LocatorBarManager locator;
     private TrialChamber chamber;
+    private PoundThrow throwing;
+    private SettingsGui gui;
 
     @Override
     public void onEnable() {
@@ -33,10 +35,13 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
         nametags = new NametagManager(this, items);
         locator = new LocatorBarManager(this);
         chamber = new TrialChamber(this, items);
+        throwing = new PoundThrow(this, items);
+        gui = new SettingsGui(this, items);
 
-        Bukkit.getPluginManager().registerEvents(new AbilityListener(this, items, armor, barrier, nametags, locator), this);
+        Bukkit.getPluginManager().registerEvents(new AbilityListener(this, items, armor, barrier, nametags, locator, throwing), this);
+        Bukkit.getPluginManager().registerEvents(gui, this);
         Bukkit.getPluginManager().registerEvents(new AltarListener(this, items), this);
-        var cmd = getCommand("potendpound");
+        var cmd = getCommand("potentpound");
         if (cmd != null) {
             cmd.setExecutor(this);
             cmd.setTabCompleter(this);
@@ -47,16 +52,23 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
 
     @Override
     public void onDisable() {
+        if (throwing != null) throwing.shutdown();
         if (locator != null) locator.shutdown();
         if (nametags != null) nametags.shutdown();
         if (barrier != null) barrier.stopAll();
         if (armor != null) armor.revertAll();
     }
 
+    /** Re-applies settings that are cached by running systems. */
+    public void reloadLive() {
+        nametags.shutdown();
+        nametags.start();
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(MM.deserialize("<gray>/potendpound <white>give [player]<gray> | <white>reload<gray> | <white>chamber<gray> | <white>undo"));
+            sender.sendMessage(MM.deserialize("<gray>/potentpound <white>gui<gray> | <white>give [player]<gray> | <white>reload<gray> | <white>chamber<gray> | <white>undo"));
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -74,9 +86,15 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
             }
             case "reload" -> {
                 reloadConfig();
-                nametags.shutdown();
-                nametags.start();
-                sender.sendMessage(MM.deserialize("<gray>Potend Pound config reloaded."));
+                reloadLive();
+                sender.sendMessage(MM.deserialize("<gray>Potent Pound config reloaded."));
+            }
+            case "gui" -> {
+                if (!(sender instanceof Player gp) || !sender.hasPermission("potendpound.gui")) {
+                    sender.sendMessage(MM.deserialize("<red>Players with potendpound.gui only."));
+                    return true;
+                }
+                gui.open(gp);
             }
             case "chamber" -> {
                 if (!(sender instanceof Player p) || !sender.hasPermission("potendpound.chamber")) {
@@ -101,6 +119,7 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
+            out.add("gui");
             out.add("give");
             out.add("reload");
             out.add("chamber");

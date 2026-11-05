@@ -14,8 +14,11 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -50,33 +53,53 @@ public final class AbilityListener implements Listener {
     private final BarrierField barrier;
     private final NametagManager nametags;
     private final LocatorBarManager locator;
+    private final PoundThrow throwing;
     private final Map<String, Long> cooldowns = new HashMap<>();
+    private record Combo(int count, UUID target, long time) {}
+    private final Map<UUID, Combo> combos = new HashMap<>();
+    private final Map<UUID, Long> noFall = new HashMap<>();
 
     public AbilityListener(PotendPoundPlugin plugin, PotendItem items, ArmorDowngrade armor,
-                           BarrierField barrier, NametagManager nametags, LocatorBarManager locator) {
+                           BarrierField barrier, NametagManager nametags, LocatorBarManager locator, PoundThrow throwing) {
         this.plugin = plugin;
         this.items = items;
         this.armor = armor;
         this.barrier = barrier;
         this.nametags = nametags;
         this.locator = locator;
+        this.throwing = throwing;
     }
 
     // ------------------------------------------------------------------ abilities
+
+    private boolean on(String path) {
+        return plugin.getConfig().getBoolean(path, true);
+    }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
         if (e.getHand() != EquipmentSlot.HAND) return;
         Action a = e.getAction();
-        if (a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
         Player p = e.getPlayer();
+
+        // Sneak + LEFT click = throw the Pound
+        if (a == Action.LEFT_CLICK_AIR || a == Action.LEFT_CLICK_BLOCK) {
+            if (p.isSneaking() && usable(p) && on("abilities.throw")) {
+                e.setCancelled(true);
+                tryThrow(p);
+            }
+            return;
+        }
+        if (a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
         if (!usable(p)) return;
 
         if (p.isSneaking()) {
+            if (!on("abilities.fortress-of-wind")) return;
             e.setCancelled(true);
             tryBarrier(p);
             return;
         }
+        if (!on("abilities.rend-armor")) return;
         Player target = findTarget(p);
         if (target != null) {
             e.setCancelled(true);
@@ -91,9 +114,11 @@ public final class AbilityListener implements Listener {
         Player p = e.getPlayer();
         if (!usable(p)) return;
         if (p.isSneaking()) {
+            if (!on("abilities.fortress-of-wind")) return;
             e.setCancelled(true);
             tryBarrier(p);
-        } else if (e.getRightClicked() instanceof Player target && target.getGameMode() != GameMode.SPECTATOR) {
+        } else if (on("abilities.rend-armor") && e.getRightClicked() instanceof Player target
+                && target.getGameMode() != GameMode.SPECTATOR) {
             e.setCancelled(true);
             tryRend(p, target);
         }
@@ -109,6 +134,89 @@ public final class AbilityListener implements Listener {
         RayTraceResult r = p.getWorld().rayTrace(eye, eye.getDirection(), range, FluidCollisionMode.NEVER, true, 0.4,
                 ent -> ent instanceof Player pl && !pl.equals(p) && pl.getGameMode() != GameMode.SPECTATOR);
         return r != null && r.getHitEntity() instanceof Player t ? t : null;
+    }
+
+    private void tryThrow(Player p) {
+        double cd = plugin.getConfig().getDouble("throw.cooldown-seconds", 40.0);
+        String key = p.getUniqueId() + ":throw";
+        if (!ready(p, key, "Pound Throw", cd)) return;
+        if (!throwing.start(p)) cooldowns.remove(key);
+    }
+
+    /** Sneak + hitting something with the Pound throws it instead of a normal attack. */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onAttack(EntityDamageByEntityEvent e) {
+        if (!(e.getDamager() instanceof Player p)) return;
+        if (e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
+        if (!p.isSneaking() || !usable(p) || !on("abilities.throw")) return;
+        e.setCancelled(true);
+        tryThrow(p);
+    }
+
+    /** N critical hits in a row on the same target trigger a mace-style smash. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCritCombo(EntityDamageByEntityEvent e) {
+        if (!(e.getDamager() instanceof Player p) || !(e.getEntity() instanceof LivingEntity victim)) return;
+        if (e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
+        if (!usable(p) || !on("abilities.crit-combo")) return;
+
+        var cfg = plugin.getConfig();
+        UUID id = p.getUniqueId();
+        long now = System.currentTimeMillis();
+        Combo c = combos.get(id);
+        if (c != null && now - c.time() > cfg.getLong("combo.reset-seconds", 8) * 1000L) c = null;
+        if (!e.isCritical()) {                         // a plain hit breaks the streak
+            combos.remove(id);
+            return;
+        }
+        boolean sameTarget = cfg.getBoolean("combo.same-target", true);
+        int count = (c != null && (!sameTarget || c.target().equals(victim.getUniqueId()))) ? c.count() + 1 : 1;
+        int needed = Math.max(1, cfg.getInt("combo.crits-needed", 7));
+        if (count < needed) {
+            combos.put(id, new Combo(count, victim.getUniqueId(), now));
+            p.sendActionBar(MM.deserialize("<gray>Crit streak <white>" + count + "<dark_gray>/</dark_gray>" + needed));
+            return;
+        }
+        combos.remove(id);
+        smash(p, victim, e);
+    }
+
+    private void smash(Player p, LivingEntity victim, EntityDamageByEntityEvent e) {
+        var cfg = plugin.getConfig();
+        e.setDamage(e.getDamage() + cfg.getDouble("combo.smash-bonus-damage", 8.0));
+        Location loc = victim.getLocation().add(0, 0.5, 0);
+        var w = loc.getWorld();
+        w.spawnParticle(Particle.EXPLOSION, loc, 2, 0.3, 0.3, 0.3, 0);
+        w.spawnParticle(Particle.CLOUD, loc, 60, 0.8, 0.3, 0.8, 0.25);
+        w.spawnParticle(Particle.CRIT, loc, 40, 0.6, 0.6, 0.6, 0.5);
+        w.playSound(loc, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2f, 0.9f);
+        p.sendActionBar(MM.deserialize("<gradient:#ffffff:#777780><b>SMASH!</b></gradient>"));
+
+        double radius = cfg.getDouble("combo.smash-radius", 3.5);
+        for (var en : w.getNearbyEntities(loc, radius, radius, radius)) {
+            if (!(en instanceof LivingEntity le) || en.equals(p) || en.equals(victim) || en instanceof org.bukkit.entity.ArmorStand) continue;
+            Vector v = en.getLocation().toVector().subtract(loc.toVector()).setY(0);
+            if (v.lengthSquared() < 0.01) continue;
+            le.setVelocity(v.normalize().multiply(0.8).setY(0.35));
+        }
+        int wind = p.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.WIND_BURST);
+        if (wind > 0) {                                // Wind Burst: launched upward, no fall damage
+            double up = cfg.getDouble("combo.windburst-base", 1.0) + cfg.getDouble("combo.windburst-per-level", 0.4) * wind;
+            p.setVelocity(p.getVelocity().setY(up));
+            p.setFallDistance(0f);
+            noFall.put(p.getUniqueId(), System.currentTimeMillis() + 20_000L);
+            w.spawnParticle(Particle.CLOUD, p.getLocation(), 40, 0.4, 0.1, 0.4, 0.15);
+            w.playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 2f, 1f);
+        }
+    }
+
+    @EventHandler
+    public void onFall(EntityDamageEvent e) {
+        if (e.getCause() != EntityDamageEvent.DamageCause.FALL || !(e.getEntity() instanceof Player p)) return;
+        Long until = noFall.get(p.getUniqueId());
+        if (until == null) return;
+        noFall.remove(p.getUniqueId());
+        if (until > System.currentTimeMillis()) e.setCancelled(true);
     }
 
     private void tryRend(Player user, Player target) {
@@ -207,6 +315,7 @@ public final class AbilityListener implements Listener {
     @EventHandler
     public void onKill(EntityDeathEvent e) {
         LivingEntity victim = e.getEntity();
+        if (!on("density.enabled")) return;
         if (!(victim instanceof Player) && !plugin.getConfig().getBoolean("density.count-mobs", false)) return;
         Player killer = victim.getKiller();
         if (killer == null || killer.equals(victim)) return;
@@ -253,10 +362,13 @@ public final class AbilityListener implements Listener {
         barrier.stop(p.getUniqueId());
         nametags.leave(p);
         locator.reset(p);
+        throwing.returnNow(p);
+        combos.remove(p.getUniqueId());
     }
 
     @EventHandler
     public void onDeath(PlayerDeathEvent e) {
+        throwing.onDeath(e);
         List<ItemStack> drops = e.getDrops();
         for (int i = 0; i < drops.size(); i++) {
             ItemStack d = drops.get(i);

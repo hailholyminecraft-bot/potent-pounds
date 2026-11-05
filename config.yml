@@ -8,7 +8,14 @@ resource-pack:
   url: ""
   sha1: ""
 
+abilities:                     # master switches (also in /potentpound gui)
+  rend-armor: true
+  fortress-of-wind: true
+  throw: true
+  crit-combo: true
+
 item:
+  sharpness: 7                 # 0 = no Sharpness
   # <font:potendpound:potend> is the custom font from the resource pack (falls back to the normal font without it).
   name: "<!italic><font:potendpound:potend><gradient:#ffffff:#a3a3ad:#3d3d46>Potent Pound</gradient></font>"
   use-custom-model: true
@@ -34,6 +41,14 @@ item:
     - "<dark_gray>▸ <gradient:#ffffff:#8a8a95><b>TITAN'S SLAM</b></gradient> <dark_gray>(<gray>Fall + Strike<dark_gray>)"
     - "<gray>  Crash down like a mace. Every <white>kill</white> grows its"
     - "<gray>  <white>Density</white> by one, up to level <white>{density}</white>."
+    - ""
+    - "<dark_gray>▸ <gradient:#ffffff:#8a8a95><b>POUND THROW</b></gradient> <dark_gray>(<gray>Sneak + Left Click<dark_gray>)"
+    - "<gray>  Hurl it spinning up to <white>{throw_range} blocks</white>. A hit deals"
+    - "<gray>  <white>{throw_hearts} hearts</white> of true damage — a miss strikes <white>you</white>."
+    - ""
+    - "<dark_gray>▸ <gradient:#ffffff:#8a8a95><b>CRUSHING COMBO</b></gradient> <dark_gray>(<gray>Crit Streak<dark_gray>)"
+    - "<gray>  <white>{crits} crits</white> in a row unleash a mace smash —"
+    - "<gray>  with <white>Wind Burst</white> it launches you skyward."
     - "<dark_gray><st>                                    </st>"
     - "<dark_gray>“<gray>Let the sky remember its weight.<dark_gray>”"
 
@@ -51,6 +66,7 @@ barrier:
   hold-strength: 0.7
 
 density:
+  enabled: true            # +1 Density per kill
   max: 6                       # the weapon starts with no Density and gains +1 per kill up to this
   count-mobs: false            # false = only player kills count, true = any kill counts
 
@@ -58,6 +74,23 @@ locator-bar:
   # Players only see the locator bar while a Dragon Egg is in their inventory.
   # (Uses the waypoint_receive_range attribute; the locatorBar game rule must stay on.)
   enabled: true
+
+throw:
+  cooldown-seconds: 40.0
+  range: 20.0                  # blocks before it counts as a miss
+  damage-hearts: 3.0           # true damage (ignores armor/enchants/resistance); a miss hits the thrower instead
+  speed: 1.0                   # blocks per tick
+  stop-at-blocks: true
+  self-damage-on-miss: true
+
+combo:
+  crits-needed: 7              # critical hits in a row to trigger the mace smash
+  same-target: true
+  reset-seconds: 8
+  smash-bonus-damage: 8.0
+  smash-radius: 3.5
+  windburst-base: 1.0          # upward launch with Wind Burst: base + per-level * level
+  windburst-per-level: 0.4
 
 nametag:
   enabled: true
