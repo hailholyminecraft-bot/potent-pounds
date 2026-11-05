@@ -71,6 +71,7 @@ density:
   count-mobs: false            # false = only player kills count, true = any kill counts
 
 locator-bar:
+  range: 60000000.0           # blocks; egg carriers see everyone within this range
   # Players only see the locator bar while a Dragon Egg is in their inventory.
   # (Uses the waypoint_receive_range attribute; the locatorBar game rule must stay on.)
   enabled: true
@@ -101,3 +102,13 @@ nametag:
 
 altar:
   knockback: true              # harmless push when the altar explodes (no damage is ever dealt)
+
+boss:
+  enabled: true                # taking the weapon from the altar wakes the Trial Protector
+  health: 600.0
+  scale: 3.2                   # size of the boss (hitbox and model)
+  charge-damage: 6.0           # wind charge hit (3 hearts), then armor wear below
+  armor-damage: 25             # durability lost by every worn armor piece per charge hit
+  slam-damage: 12.0            # ground slam (6 hearts, less at the edge)
+  attack-interval-seconds: 5.0
+  model-yaw-offset: 0.0        # set to 180 if the boss model faces backwards

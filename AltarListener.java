@@ -10,6 +10,7 @@ import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -30,10 +31,12 @@ public final class AltarListener implements Listener {
 
     private final PotendPoundPlugin plugin;
     private final PotendItem items;
+    private final BossManager bosses;
 
-    public AltarListener(PotendPoundPlugin plugin, PotendItem items) {
+    public AltarListener(PotendPoundPlugin plugin, PotendItem items, BossManager bosses) {
         this.plugin = plugin;
         this.items = items;
+        this.bosses = bosses;
     }
 
     @EventHandler
@@ -92,7 +95,7 @@ public final class AltarListener implements Listener {
 
                 if (t >= RISE) {
                     cancel();
-                    explode(cur);
+                    explode(cur, base);
                     if (display != null) display.remove();
                     inter.remove();
                     return;
@@ -102,7 +105,7 @@ public final class AltarListener implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    private void explode(Location loc) {
+    private void explode(Location loc, Location altar) {
         World w = loc.getWorld();
         w.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 1, 1, 1, 0);
         w.spawnParticle(Particle.END_ROD, loc, 400, 0.2, 0.2, 0.2, 0.9);
@@ -129,6 +132,8 @@ public final class AltarListener implements Listener {
             it.setGlowing(true);
             it.setInvulnerable(true);
             it.setUnlimitedLifetime(true);
+            it.getPersistentDataContainer().set(bosses.dropKey(), PersistentDataType.STRING,
+                    altar.getX() + ";" + altar.getY() + ";" + altar.getZ());
         });
     }
 }

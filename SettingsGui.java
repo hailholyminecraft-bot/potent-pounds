@@ -102,6 +102,13 @@ public final class SettingsGui implements Listener {
         num(39, "combo.windburst-base", Type.DOUBLE, Material.WIND_CHARGE, "Wind Burst launch", "Base upward launch with Wind Burst.", 1.0, 0.2, 4, 0.1, false);
         num(40, "combo.windburst-per-level", Type.DOUBLE, Material.WIND_CHARGE, "Launch per level", "Extra launch per Wind Burst level.", 0.4, 0, 2, 0.1, false);
         num(41, "combo.reset-seconds", Type.INT, Material.CLOCK, "Streak timeout (s)", "Streak resets after this long.", 8, 1, 60, 1, false);
+        // boss + locator (free slots)
+        bool(15, "boss.enabled", Material.WITHER_SKELETON_SKULL, "Trial Protector boss", "Taking the weapon from the altar wakes it.", true, false);
+        num(16, "boss.health", Type.DOUBLE, Material.GOLDEN_APPLE, "Boss health", "Hit points of the Trial Protector.", 600, 50, 5000, 50, false);
+        num(17, "boss.charge-damage", Type.DOUBLE, Material.WIND_CHARGE, "Boss charge damage", "Damage of one wind charge.", 6, 0, 40, 1, false);
+        num(26, "boss.slam-damage", Type.DOUBLE, Material.MACE, "Boss slam damage", "Damage of the ground slam.", 12, 0, 60, 1, false);
+        num(33, "boss.armor-damage", Type.INT, Material.IRON_CHESTPLATE, "Boss armor wear", "Durability lost per armor piece per charge.", 25, 0, 500, 5, false);
+        num(34, "boss.attack-interval-seconds", Type.DOUBLE, Material.CLOCK, "Boss attack interval (s)", "Pause between boss attacks.", 5, 1, 30, 0.5, false);
         bool(42, "combo.same-target", Material.TARGET, "Same target only", "Streak must stay on one target.", true, false);
     }
 
