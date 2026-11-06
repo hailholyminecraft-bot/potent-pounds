@@ -105,10 +105,15 @@ altar:
 
 boss:
   enabled: true                # taking the weapon from the altar wakes the Trial Protector
-  health: 600.0
-  scale: 3.2                   # size of the boss (hitbox and model)
-  charge-damage: 6.0           # wind charge hit (3 hearts), then armor wear below
+  health: 300.0
+  defense: 12.0
+  scale: 3.6                   # size of the boss (hitbox and model)
+  punch-damage: 18.0           # Hurricane Punch (9 hearts, less at long range)
+  charge-damage: 6.0           # one wind charge from Wind Burst (3 hearts), plus armor wear below
   armor-damage: 25             # durability lost by every worn armor piece per charge hit
-  slam-damage: 12.0            # ground slam (6 hearts, less at the edge)
-  attack-interval-seconds: 5.0
+  tornado-damage: 5.0          # per hit from a summoned tornado
+  levitate-seconds: 2.5        # how long the vortex lifts players
+  attack-interval-seconds: 4.0
+  xp-min: 20
+  xp-max: 40
   model-yaw-offset: 0.0        # set to 180 if the boss model faces backwards

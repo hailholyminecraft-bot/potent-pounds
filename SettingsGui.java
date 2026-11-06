@@ -104,9 +104,10 @@ public final class SettingsGui implements Listener {
         num(41, "combo.reset-seconds", Type.INT, Material.CLOCK, "Streak timeout (s)", "Streak resets after this long.", 8, 1, 60, 1, false);
         // boss + locator (free slots)
         bool(15, "boss.enabled", Material.WITHER_SKELETON_SKULL, "Trial Protector boss", "Taking the weapon from the altar wakes it.", true, false);
-        num(16, "boss.health", Type.DOUBLE, Material.GOLDEN_APPLE, "Boss health", "Hit points of the Trial Protector.", 600, 50, 5000, 50, false);
+        num(16, "boss.health", Type.DOUBLE, Material.GOLDEN_APPLE, "Boss health", "Hit points of the Trial Protector.", 300, 50, 5000, 50, false);
         num(17, "boss.charge-damage", Type.DOUBLE, Material.WIND_CHARGE, "Boss charge damage", "Damage of one wind charge.", 6, 0, 40, 1, false);
-        num(26, "boss.slam-damage", Type.DOUBLE, Material.MACE, "Boss slam damage", "Damage of the ground slam.", 12, 0, 60, 1, false);
+        num(26, "boss.punch-damage", Type.DOUBLE, Material.MACE, "Boss punch damage", "Damage of the Hurricane Punch.", 18, 0, 60, 1, false);
+        num(35, "boss.tornado-damage", Type.DOUBLE, Material.COBWEB, "Boss tornado damage", "Damage per tornado hit.", 5, 0, 40, 1, false);
         num(33, "boss.armor-damage", Type.INT, Material.IRON_CHESTPLATE, "Boss armor wear", "Durability lost per armor piece per charge.", 25, 0, 500, 5, false);
         num(34, "boss.attack-interval-seconds", Type.DOUBLE, Material.CLOCK, "Boss attack interval (s)", "Pause between boss attacks.", 5, 1, 30, 0.5, false);
         bool(42, "combo.same-target", Material.TARGET, "Same target only", "Streak must stay on one target.", true, false);
