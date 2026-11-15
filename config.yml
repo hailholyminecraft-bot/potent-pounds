@@ -141,8 +141,8 @@ shade:
     - "<gray>  can hurt you — and <white>nothing inside can leave</white>."
     - ""
     - "<dark_gray>▸ <gradient:#d2b4ff:#8a5af0><b>SOUL SLAM</b></gradient> <dark_gray>(<gray>Hit, then Right Click<dark_gray>)"
-    - "<gray>  Seize your foe, steer them with your crosshair"
-    - "<gray>  and slam them down. Chain up to <white>{slam_max}</white> slams."
+    - "<gray>  Launch your foe skyward, then slam them into the"
+    - "<gray>  ground. Chain up to <white>{slam_max}</white> slams."
     - ""
     - "<dark_gray>▸ <gradient:#d2b4ff:#8a5af0><b>SHADOW HARVEST</b></gradient>"
     - "<gray>  Every kill thickens the dark around you."
@@ -158,12 +158,13 @@ dome:
   block-entry: false           # true = outsiders can't walk in either
 
 slam:
-  cooldown-seconds: 50.0       # starts when the combo ends
+  cooldown-seconds: 60.0       # starts when the combo ends
   max-count: 3                 # right-click again after a slam, up to this many slams
   window-seconds: 5.0          # time to right-click for the next slam
-  hold-seconds: 1.2            # how long you steer them before the slam
+  lift-height: 8.0             # how high the target flies up before it is slammed down
+  hang-ticks: 6                # how long it hangs at the top
   range: 14.0
-  mark-seconds: 8              # how long a target you hit stays grabbable
-  damage: 12.0
-  damage-per-extra: 4.0        # extra damage for each later slam in the combo
+  mark-seconds: 8              # how long a target you hit stays launchable
+  damage: 16.0                 # first slam (8 hearts)
+  damage-per-extra: 6.0        # extra damage for each later slam in the combo
   true-damage: true            # ignores armor and enchantments

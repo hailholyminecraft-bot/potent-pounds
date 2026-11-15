@@ -42,7 +42,7 @@ import java.util.UUID;
 /**
  * Shade Sheath abilities:
  *  - Sneak + right click: Shade Dome (nothing inside can hurt you, nothing inside can leave).
- *  - Hit something, then right click: grab it, steer it with your crosshair, slam it into the ground.
+ *  - Hit something, then right click: it flies up, then gets slammed into the ground.
  *    Right click again after a slam (up to the max) to slam again.
  *  - Kills grow a dark aura around you; enough kills give a permanent dark halo. Everything can be reset.
  */
@@ -385,17 +385,21 @@ public final class ShadeManager implements Listener {
         return true;
     }
 
+    /** The target is launched straight up, hangs for a moment, then is slammed back into the ground. */
     private void runSlam(Combo c, LivingEntity v) {
         var cfg = plugin.getConfig();
         Player p = c.owner;
         World w = v.getWorld();
-        int hold = Math.max(4, (int) (cfg.getDouble("slam.hold-seconds", 1.2) * 20));
+        double liftHeight = cfg.getDouble("slam.lift-height", 8.0);
+        int hang = Math.max(0, cfg.getInt("slam.hang-ticks", 6));
+        double startY = v.getLocation().getY();
         grabbed.add(v.getUniqueId());
         w.playSound(v.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
-        w.playSound(v.getLocation(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 1.5f, 1.0f);
+        w.playSound(v.getLocation(), Sound.ENTITY_BREEZE_JUMP, 2f, 0.7f);
+        w.spawnParticle(Particle.SQUID_INK, v.getLocation().add(0, 0.5, 0), 50, 0.5, 0.3, 0.5, 0.12);
+        w.spawnParticle(Particle.SOUL_FIRE_FLAME, v.getLocation().add(0, 0.5, 0), 40, 0.4, 0.2, 0.4, 0.1);
         new BukkitRunnable() {
-            int t = 0, fall = 0;
-            boolean slamming = false;
+            int phase = 0, t = 0, hangT = 0, fall = 0;     // 0 = fly up, 1 = hang, 2 = slam down
 
             @Override
             public void run() {
@@ -405,28 +409,23 @@ public final class ShadeManager implements Listener {
                     return;
                 }
                 Location vl = v.getLocation();
-                if (!slamming) {
-                    Location eye = p.getEyeLocation();
-                    Location want = eye.clone().add(eye.getDirection().multiply(6.0));    // follows your crosshair
-                    Vector steer = want.toVector().subtract(vl.toVector()).multiply(0.3);
-                    if (steer.length() > 1.1) steer.normalize().multiply(1.1);
-                    v.setVelocity(steer);
+                if (phase == 0) {
+                    v.setVelocity(new Vector(0, 0.95, 0));
                     v.setFallDistance(0f);
-                    Location from = eye.clone().add(eye.getDirection().multiply(0.8)).subtract(0, 0.3, 0);
-                    Vector beam = vl.clone().add(0, 1, 0).toVector().subtract(from.toVector());
-                    double len = beam.length();
-                    if (len > 0.1) {
-                        beam.normalize().multiply(0.6);
-                        Location cur = from.clone();
-                        for (double d = 0; d < len; d += 0.6) {
-                            w.spawnParticle(Particle.DUST, cur, 1, 0.03, 0.03, 0.03, 0, ((int) (d / 0.6)) % 2 == 0 ? VIOLET : BLACK);
-                            cur.add(beam);
-                        }
+                    w.spawnParticle(Particle.SQUID_INK, vl.clone().add(0, 0.3, 0), 4, 0.3, 0.2, 0.3, 0.03);
+                    w.spawnParticle(Particle.DUST, vl.clone().add(0, 0.5, 0), 5, 0.3, 0.4, 0.3, 0, VIOLET);
+                    boolean ceiling = vl.clone().add(0, v.getHeight() + 0.4, 0).getBlock().getType().isSolid();
+                    if (vl.getY() - startY >= liftHeight || ++t > 30 || ceiling) phase = 1;
+                } else if (phase == 1) {
+                    v.setVelocity(new Vector(0, 0, 0));          // hang in the air for a beat
+                    v.setFallDistance(0f);
+                    for (int k = 0; k < 10; k++) {
+                        double a = k * Math.PI * 2 / 10 + hangT * 0.5;
+                        w.spawnParticle(Particle.DUST, vl.getX() + Math.cos(a) * 1.1, vl.getY() + 1, vl.getZ() + Math.sin(a) * 1.1, 1, 0, 0, 0, 0, k % 2 == 0 ? BLACK : VIOLET_LT);
                     }
-                    w.spawnParticle(Particle.SOUL_FIRE_FLAME, vl.clone().add(0, 1, 0), 4, 0.4, 0.6, 0.4, 0.02);
-                    w.spawnParticle(Particle.SQUID_INK, vl.clone().add(0, 1, 0), 3, 0.4, 0.6, 0.4, 0.02);
-                    if (++t >= hold) {
-                        slamming = true;
+                    if (hangT == 0) w.playSound(vl, Sound.ENTITY_WARDEN_SONIC_CHARGE, 2f, 1.2f);
+                    if (++hangT >= hang) {
+                        phase = 2;
                         w.playSound(vl, Sound.ENTITY_BREEZE_JUMP, 2f, 0.5f);
                     }
                 } else {
@@ -434,7 +433,7 @@ public final class ShadeManager implements Listener {
                     w.spawnParticle(Particle.SQUID_INK, vl.clone().add(0, 1, 0), 6, 0.3, 0.8, 0.3, 0.05);
                     w.spawnParticle(Particle.DUST, vl.clone().add(0, 1.5, 0), 6, 0.3, 0.8, 0.3, 0, VIOLET_LT);
                     boolean grounded = v.isOnGround() || vl.clone().subtract(0, 0.4, 0).getBlock().getType().isSolid();
-                    if (grounded || ++fall > 30) {
+                    if (grounded || ++fall > 40) {
                         cancel();
                         impact(c, v);
                     }
@@ -448,7 +447,7 @@ public final class ShadeManager implements Listener {
         Player p = c.owner;
         Location l = v.getLocation();
         World w = l.getWorld();
-        double dmg = cfg.getDouble("slam.damage", 12.0) + cfg.getDouble("slam.damage-per-extra", 4.0) * c.done;
+        double dmg = cfg.getDouble("slam.damage", 16.0) + cfg.getDouble("slam.damage-per-extra", 6.0) * c.done;
         c.done++;
         w.spawnParticle(Particle.EXPLOSION_EMITTER, l, 2, 0.5, 0.2, 0.5, 0);
         w.spawnParticle(Particle.SQUID_INK, l.clone().add(0, 0.5, 0), 140, 1.2, 0.6, 1.2, 0.2);

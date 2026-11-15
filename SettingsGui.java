@@ -117,7 +117,7 @@ public final class SettingsGui implements Listener {
         cur = 1;
         // ---- Shade Sheath page ----
         bool(0, "abilities.shade-dome", Material.ENDER_EYE, "Shade Dome", "Sneak + right-click: dome that traps everyone inside.", true, false);
-        bool(1, "abilities.shade-slam", Material.NETHERITE_SWORD, "Soul Slam", "Hit, then right-click: grab and slam.", true, false);
+        bool(1, "abilities.shade-slam", Material.NETHERITE_SWORD, "Soul Slam", "Hit, then right-click: launch and slam.", true, false);
         bool(2, "shade.aura-enabled", Material.SOUL_LANTERN, "Kill aura particles", "Dark particles around the holder.", true, false);
         bool(3, "shade.halo-enabled", Material.ECHO_SHARD, "Dark halo", "Permanent halo above the head.", true, false);
         bool(4, "shade.count-mobs", Material.ZOMBIE_HEAD, "Mob kills count", "Off = only player kills count.", false, false);
@@ -129,14 +129,14 @@ public final class SettingsGui implements Listener {
         num(18, "dome.duration-seconds", Type.INT, Material.CLOCK, "Dome duration (s)", "How long the dome lasts.", 15, 1, 120, 1, false);
         num(19, "dome.cooldown-seconds", Type.DOUBLE, Material.CLOCK, "Dome cooldown (s)", "Seconds between domes.", 30, 1, 600, 5, false);
         num(20, "dome.radius", Type.DOUBLE, Material.SPYGLASS, "Dome radius", "Blocks.", 8, 2, 30, 1, false);
-        num(27, "slam.cooldown-seconds", Type.DOUBLE, Material.CLOCK, "Slam cooldown (s)", "Starts when the slam combo ends.", 50, 1, 600, 5, false);
+        num(27, "slam.cooldown-seconds", Type.DOUBLE, Material.CLOCK, "Slam cooldown (s)", "Starts when the slam combo ends.", 60, 1, 600, 5, false);
         num(28, "slam.max-count", Type.INT, Material.ANVIL, "Slams per combo", "Right-click again to slam again.", 3, 1, 10, 1, false);
-        num(29, "slam.damage", Type.DOUBLE, Material.RED_DYE, "Slam damage", "First slam (hearts x 2).", 12, 0, 100, 1, false);
-        num(30, "slam.damage-per-extra", Type.DOUBLE, Material.REDSTONE, "Extra damage per slam", "Added for each later slam.", 4, 0, 50, 1, false);
-        num(31, "slam.hold-seconds", Type.DOUBLE, Material.FEATHER, "Hold time (s)", "How long you steer them before the slam.", 1.2, 0.3, 5, 0.1, false);
+        num(29, "slam.damage", Type.DOUBLE, Material.RED_DYE, "Slam damage", "First slam (hearts x 2).", 16, 0, 100, 1, false);
+        num(30, "slam.damage-per-extra", Type.DOUBLE, Material.REDSTONE, "Extra damage per slam", "Added for each later slam.", 6, 0, 50, 1, false);
+        num(31, "slam.lift-height", Type.DOUBLE, Material.FEATHER, "Launch height", "Blocks the target flies up before the slam.", 8, 2, 30, 1, false);
         num(32, "slam.range", Type.DOUBLE, Material.SPYGLASS, "Grab range", "Blocks.", 14, 3, 40, 1, false);
         num(36, "slam.window-seconds", Type.DOUBLE, Material.CLOCK, "Combo window (s)", "Time to right-click for the next slam.", 5, 1, 15, 0.5, false);
-        num(37, "slam.mark-seconds", Type.INT, Material.TARGET, "Mark time (s)", "How long a hit target can be grabbed.", 8, 1, 30, 1, false);
+        num(37, "slam.mark-seconds", Type.INT, Material.TARGET, "Mark time (s)", "How long a hit target can be launched.", 8, 1, 30, 1, false);
     }
 
     // ------------------------------------------------------------------ open / render
