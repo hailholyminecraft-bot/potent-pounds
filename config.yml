@@ -13,6 +13,8 @@ abilities:                     # master switches (also in /potentpound gui)
   fortress-of-wind: true
   throw: true
   crit-combo: true
+  shade-dome: true
+  shade-slam: true
 
 item:
   sharpness: 7                 # 0 = no Sharpness
@@ -117,3 +119,51 @@ boss:
   xp-min: 20
   xp-max: 40
   model-yaw-offset: 0.0        # set to 180 if the boss model faces backwards
+
+# ---------------- Shade Sheath (sword) ----------------
+shade:
+  name: "<!italic><gradient:#7a4ad8:#d2b4ff:#7a4ad8><b>Shade Sheath</b></gradient>"
+  use-custom-model: true
+  sharpness: 5                 # 0 = none; it is a netherite sword, so normal sword damage and cooldown
+  aura-enabled: true           # dark particles around the holder, thicker with every kill
+  halo-enabled: true           # permanent dark halo after enough kills
+  halo-kills: 5
+  count-mobs: false            # false = only player kills count
+  epoch: 0                     # bumped by "reset all"; do not edit
+  lore:
+    - "<gradient:#d2b4ff:#7a4ad8>✦ Blade of Shadows ✦</gradient>"
+    - "<dark_gray><st>                                    </st>"
+    - "<gray><i>Light bends around it. Nothing that stands</i>"
+    - "<gray><i>in its shade can touch its wielder.</i>"
+    - ""
+    - "<dark_gray>▸ <gradient:#d2b4ff:#8a5af0><b>SHADE DOME</b></gradient> <dark_gray>(<gray>Sneak + Right Click<dark_gray>)"
+    - "<gray>  Raise a dome of shadow for <white>{dome_sec}s</white>. Nothing inside"
+    - "<gray>  can hurt you — and <white>nothing inside can leave</white>."
+    - ""
+    - "<dark_gray>▸ <gradient:#d2b4ff:#8a5af0><b>SOUL SLAM</b></gradient> <dark_gray>(<gray>Hit, then Right Click<dark_gray>)"
+    - "<gray>  Seize your foe, steer them with your crosshair"
+    - "<gray>  and slam them down. Chain up to <white>{slam_max}</white> slams."
+    - ""
+    - "<dark_gray>▸ <gradient:#d2b4ff:#8a5af0><b>SHADOW HARVEST</b></gradient>"
+    - "<gray>  Every kill thickens the dark around you."
+    - "<gray>  <white>{halo_kills} kills</white> crown you with a dark halo."
+    - "<dark_gray><st>                                    </st>"
+    - "<dark_gray>“<gray>Where it falls, the light forgets.<dark_gray>”"
+
+dome:
+  duration-seconds: 15
+  cooldown-seconds: 30.0
+  radius: 8.0
+  owner-confined: true         # "no one can get out" - set false to let only the others be trapped
+  block-entry: false           # true = outsiders can't walk in either
+
+slam:
+  cooldown-seconds: 50.0       # starts when the combo ends
+  max-count: 3                 # right-click again after a slam, up to this many slams
+  window-seconds: 5.0          # time to right-click for the next slam
+  hold-seconds: 1.2            # how long you steer them before the slam
+  range: 14.0
+  mark-seconds: 8              # how long a target you hit stays grabbable
+  damage: 12.0
+  damage-per-extra: 4.0        # extra damage for each later slam in the combo
+  true-damage: true            # ignores armor and enchantments

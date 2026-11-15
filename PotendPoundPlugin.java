@@ -28,6 +28,8 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
     private AdvancementManager advancements;
     private BossManager bosses;
     private StructureBuilder lastBuild;
+    private ShadeItem shadeItem;
+    private ShadeManager shade;
     private SettingsGui gui;
 
     @Override
@@ -40,6 +42,8 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
         locator = new LocatorBarManager(this);
         chamber = new TrialChamber(this, items);
         throwing = new PoundThrow(this, items);
+        shadeItem = new ShadeItem(this);
+        shade = new ShadeManager(this, shadeItem);
         village = new Village(this);
         advancements = new AdvancementManager(this, items);
         bosses = new BossManager(this, items, advancements);
@@ -49,6 +53,7 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
         Bukkit.getPluginManager().registerEvents(gui, this);
         Bukkit.getPluginManager().registerEvents(new AltarListener(this, items, bosses), this);
         Bukkit.getPluginManager().registerEvents(bosses, this);
+        Bukkit.getPluginManager().registerEvents(shade, this);
         var cmd = getCommand("potentpound");
         if (cmd != null) {
             cmd.setExecutor(this);
@@ -57,11 +62,13 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
         nametags.start();
         locator.start();
         advancements.start();
+        shade.start();
         bosses.cleanupOrphans();
     }
 
     @Override
     public void onDisable() {
+        if (shade != null) shade.shutdown();
         if (bosses != null) bosses.shutdown();
         if (advancements != null) advancements.shutdown();
         if (throwing != null) throwing.shutdown();
@@ -69,6 +76,14 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
         if (nametags != null) nametags.shutdown();
         if (barrier != null) barrier.stopAll();
         if (armor != null) armor.revertAll();
+    }
+
+    public ShadeItem shadeItem() {
+        return shadeItem;
+    }
+
+    public ShadeManager shade() {
+        return shade;
     }
 
     /** Re-applies settings that are cached by running systems. */
@@ -80,7 +95,7 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(MM.deserialize("<gray>/potentpound <white>gui<gray> | <white>give [player]<gray> | <white>reload<gray> | <white>chamber<gray> | <white>village<gray> | <white>boss<gray> | <white>undo"));
+            sender.sendMessage(MM.deserialize("<gray>/potentpound <white>gui<gray> | <white>give [player]<gray> | <white>reload<gray> | <white>chamber<gray> | <white>village<gray> | <white>boss<gray> | <white>shade<gray> | <white>undo"));
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -100,6 +115,35 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
                 reloadConfig();
                 reloadLive();
                 sender.sendMessage(MM.deserialize("<gray>Potent Pound config reloaded."));
+            }
+            case "shade" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(MM.deserialize("<gray>/potentpound shade <white>give [player]<gray> | <white>reset [player|all]"));
+                    return true;
+                }
+                switch (args[1].toLowerCase(Locale.ROOT)) {
+                    case "give" -> {
+                        Player st = args.length > 2 ? Bukkit.getPlayerExact(args[2]) : (sender instanceof Player sp ? sp : null);
+                        if (st == null) {
+                            sender.sendMessage(MM.deserialize("<red>Player not found."));
+                            return true;
+                        }
+                        st.getInventory().addItem(shadeItem.create()).values()
+                                .forEach(left -> st.getWorld().dropItemNaturally(st.getLocation(), left));
+                        sender.sendMessage(MM.deserialize("<gray>Gave the <white>Shade Sheath</white> to " + st.getName() + "."));
+                    }
+                    case "reset" -> {
+                        if (args.length > 2 && args[2].equalsIgnoreCase("all")) {
+                            shade.resetAll();
+                            sender.sendMessage(MM.deserialize("<gray>Everyone's Shade aura, halo and cooldowns were reset."));
+                        } else {
+                            Player rt = args.length > 2 ? Bukkit.getPlayerExact(args[2]) : (sender instanceof Player rp ? rp : null);
+                            if (rt == null) sender.sendMessage(MM.deserialize("<red>Player not found."));
+                            else shade.reset(rt);
+                        }
+                    }
+                    default -> sender.sendMessage(MM.deserialize("<red>Unknown shade subcommand."));
+                }
             }
             case "gui" -> {
                 if (!(sender instanceof Player gp) || !sender.hasPermission("potendpound.gui")) {
@@ -156,9 +200,16 @@ public final class PotendPoundPlugin extends JavaPlugin implements TabExecutor {
             out.add("chamber");
             out.add("village");
             out.add("boss");
+            out.add("shade");
             out.add("undo");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             Bukkit.getOnlinePlayers().forEach(p -> out.add(p.getName()));
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("shade")) {
+            out.add("give");
+            out.add("reset");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("shade")) {
+            Bukkit.getOnlinePlayers().forEach(p -> out.add(p.getName()));
+            if (args[1].equalsIgnoreCase("reset")) out.add("all");
         }
         return out;
     }

@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** /potentpound gui - click-to-edit settings for every ability, cooldown and stat. */
+/** /potentpound gui - page 1: Potent Pound + boss settings, page 2: Shade Sheath settings. */
 public final class SettingsGui implements Listener {
 
     private enum Type { BOOL, INT, DOUBLE }
@@ -31,6 +31,7 @@ public final class SettingsGui implements Listener {
 
     private static final class Holder implements InventoryHolder {
         Inventory inv;
+        int page;
 
         @Override
         public Inventory getInventory() {
@@ -42,7 +43,8 @@ public final class SettingsGui implements Listener {
 
     private final PotendPoundPlugin plugin;
     private final PotendItem items;
-    private final Map<Integer, Setting> bySlot = new HashMap<>();
+    private final List<Map<Integer, Setting>> pages = List.of(new HashMap<>(), new HashMap<>());
+    private int cur;
 
     public SettingsGui(PotendPoundPlugin plugin, PotendItem items) {
         this.plugin = plugin;
@@ -53,15 +55,16 @@ public final class SettingsGui implements Listener {
     // ------------------------------------------------------------------ layout
 
     private void bool(int slot, String path, Material icon, String name, String desc, boolean def, boolean weapon) {
-        bySlot.put(slot, new Setting(slot, path, Type.BOOL, icon, name, desc, def ? 1 : 0, 0, 1, 1, weapon));
+        pages.get(cur).put(slot, new Setting(slot, path, Type.BOOL, icon, name, desc, def ? 1 : 0, 0, 1, 1, weapon));
     }
 
     private void num(int slot, String path, Type type, Material icon, String name, String desc,
                      double def, double min, double max, double step, boolean weapon) {
-        bySlot.put(slot, new Setting(slot, path, type, icon, name, desc, def, min, max, step, weapon));
+        pages.get(cur).put(slot, new Setting(slot, path, type, icon, name, desc, def, min, max, step, weapon));
     }
 
     private void define() {
+        cur = 0;
         // row 1: switches
         bool(0, "abilities.rend-armor", Material.NETHERITE_CHESTPLATE, "Rend Armor", "Right-click: drop a foe's armor one tier.", true, false);
         bool(1, "abilities.fortress-of-wind", Material.WIND_CHARGE, "Fortress of Wind", "Sneak + right-click: wind barrier box.", true, false);
@@ -111,27 +114,65 @@ public final class SettingsGui implements Listener {
         num(33, "boss.armor-damage", Type.INT, Material.IRON_CHESTPLATE, "Boss armor wear", "Durability lost per armor piece per charge.", 25, 0, 500, 5, false);
         num(34, "boss.attack-interval-seconds", Type.DOUBLE, Material.CLOCK, "Boss attack interval (s)", "Pause between boss attacks.", 5, 1, 30, 0.5, false);
         bool(42, "combo.same-target", Material.TARGET, "Same target only", "Streak must stay on one target.", true, false);
+        cur = 1;
+        // ---- Shade Sheath page ----
+        bool(0, "abilities.shade-dome", Material.ENDER_EYE, "Shade Dome", "Sneak + right-click: dome that traps everyone inside.", true, false);
+        bool(1, "abilities.shade-slam", Material.NETHERITE_SWORD, "Soul Slam", "Hit, then right-click: grab and slam.", true, false);
+        bool(2, "shade.aura-enabled", Material.SOUL_LANTERN, "Kill aura particles", "Dark particles around the holder.", true, false);
+        bool(3, "shade.halo-enabled", Material.ECHO_SHARD, "Dark halo", "Permanent halo above the head.", true, false);
+        bool(4, "shade.count-mobs", Material.ZOMBIE_HEAD, "Mob kills count", "Off = only player kills count.", false, false);
+        bool(5, "slam.true-damage", Material.WITHER_SKELETON_SKULL, "Slam ignores armor", "True damage on the slam.", true, false);
+        bool(6, "dome.owner-confined", Material.IRON_BARS, "Dome traps you too", "Off = only others are trapped.", true, false);
+        bool(7, "dome.block-entry", Material.BARRIER, "Dome blocks entry", "Off = outsiders can walk in (and get trapped).", false, false);
+        num(9, "shade.sharpness", Type.INT, Material.DIAMOND_SWORD, "Sharpness level", "0 = none. Applies to new swords.", 5, 0, 10, 1, true);
+        num(10, "shade.halo-kills", Type.INT, Material.NETHER_STAR, "Kills for the halo", "Kills needed for the dark halo.", 5, 1, 50, 1, false);
+        num(18, "dome.duration-seconds", Type.INT, Material.CLOCK, "Dome duration (s)", "How long the dome lasts.", 15, 1, 120, 1, false);
+        num(19, "dome.cooldown-seconds", Type.DOUBLE, Material.CLOCK, "Dome cooldown (s)", "Seconds between domes.", 30, 1, 600, 5, false);
+        num(20, "dome.radius", Type.DOUBLE, Material.SPYGLASS, "Dome radius", "Blocks.", 8, 2, 30, 1, false);
+        num(27, "slam.cooldown-seconds", Type.DOUBLE, Material.CLOCK, "Slam cooldown (s)", "Starts when the slam combo ends.", 50, 1, 600, 5, false);
+        num(28, "slam.max-count", Type.INT, Material.ANVIL, "Slams per combo", "Right-click again to slam again.", 3, 1, 10, 1, false);
+        num(29, "slam.damage", Type.DOUBLE, Material.RED_DYE, "Slam damage", "First slam (hearts x 2).", 12, 0, 100, 1, false);
+        num(30, "slam.damage-per-extra", Type.DOUBLE, Material.REDSTONE, "Extra damage per slam", "Added for each later slam.", 4, 0, 50, 1, false);
+        num(31, "slam.hold-seconds", Type.DOUBLE, Material.FEATHER, "Hold time (s)", "How long you steer them before the slam.", 1.2, 0.3, 5, 0.1, false);
+        num(32, "slam.range", Type.DOUBLE, Material.SPYGLASS, "Grab range", "Blocks.", 14, 3, 40, 1, false);
+        num(36, "slam.window-seconds", Type.DOUBLE, Material.CLOCK, "Combo window (s)", "Time to right-click for the next slam.", 5, 1, 15, 0.5, false);
+        num(37, "slam.mark-seconds", Type.INT, Material.TARGET, "Mark time (s)", "How long a hit target can be grabbed.", 8, 1, 30, 1, false);
     }
 
     // ------------------------------------------------------------------ open / render
 
     public void open(Player p) {
+        open(p, 0);
+    }
+
+    private void open(Player p, int page) {
         Holder holder = new Holder();
-        Inventory inv = Bukkit.createInventory(holder, 54, MM.deserialize("<gradient:#ffffff:#6b6b75>Potent Pound Settings</gradient>"));
+        holder.page = page;
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                MM.deserialize(page == 0 ? "<gradient:#ffffff:#6b6b75>Potent Pound Settings</gradient>" : "<gradient:#d2b4ff:#7a4ad8>Shade Sheath Settings</gradient>"));
         holder.inv = inv;
         ItemStack filler = named(Material.GRAY_STAINED_GLASS_PANE, "<dark_gray> ", List.of());
         for (int i = 0; i < 54; i++) inv.setItem(i, filler);
-        for (Setting s : bySlot.values()) inv.setItem(s.slot(), render(s));
+        for (Setting s : pages.get(page).values()) inv.setItem(s.slot(), render(s));
 
-        inv.setItem(45, named(Material.BOOK, "<white>How to use",
-                List.of("<gray>Left-click: toggle / increase", "<gray>Right-click: decrease",
-                        "<gray>Shift-click: change by 5 steps", "<dark_gray>Saved to config.yml instantly.")));
-        inv.setItem(47, named(Material.NETHER_STAR, "<white>Give a fresh Potent Pound",
-                List.of("<gray>Uses the current settings.")));
-        inv.setItem(48, named(Material.SMITHING_TABLE, "<white>Refresh the held weapon",
-                List.of("<gray>Re-applies Sharpness, damage, speed,", "<gray>durability and name to the Pound", "<gray>in your hand (keeps other enchants).")));
-        inv.setItem(50, named(Material.WRITABLE_BOOK, "<white>Reload config from disk",
-                List.of("<gray>Use after editing config.yml by hand.")));
+        if (page == 0) {
+            inv.setItem(45, named(Material.BOOK, "<white>How to use",
+                    List.of("<gray>Left-click: toggle / increase", "<gray>Right-click: decrease",
+                            "<gray>Shift-click: change by 5 steps", "<dark_gray>Saved to config.yml instantly.")));
+            inv.setItem(43, named(Material.NETHERITE_SWORD, "<gradient:#d2b4ff:#7a4ad8>Shade Sheath settings >></gradient>",
+                    List.of("<gray>Dome, slam, aura and halo settings.")));
+            inv.setItem(47, named(Material.NETHER_STAR, "<white>Give a fresh Potent Pound", List.of("<gray>Uses the current settings.")));
+            inv.setItem(48, named(Material.SMITHING_TABLE, "<white>Refresh the held weapon",
+                    List.of("<gray>Re-applies Sharpness, damage, speed,", "<gray>durability and name to the Pound", "<gray>in your hand (keeps other enchants).")));
+        } else {
+            inv.setItem(45, named(Material.ARROW, "<white><< Potent Pound settings", List.of()));
+            inv.setItem(46, named(Material.NETHERITE_SWORD, "<gradient:#d2b4ff:#7a4ad8>Give a fresh Shade Sheath</gradient>", List.of("<gray>Uses the current settings.")));
+            inv.setItem(49, named(Material.ECHO_SHARD, "<white>Reset MY aura, halo and cooldowns",
+                    List.of("<gray>Clears your kill count (aura + halo),", "<gray>cooldowns, active dome and slam combo.")));
+            inv.setItem(51, named(Material.TNT, "<red>Reset EVERYONE's aura and halo",
+                    List.of("<gray>Resets all online players now and", "<gray>everyone else the next time they appear.")));
+        }
+        inv.setItem(50, named(Material.WRITABLE_BOOK, "<white>Reload config from disk", List.of("<gray>Use after editing config.yml by hand.")));
         inv.setItem(53, named(Material.BARRIER, "<red>Close", List.of()));
         p.openInventory(inv);
     }
@@ -173,45 +214,60 @@ public final class SettingsGui implements Listener {
 
     // ------------------------------------------------------------------ clicks
 
+    private void give(Player p, ItemStack item, String what) {
+        for (ItemStack left : p.getInventory().addItem(item).values()) p.getWorld().dropItemNaturally(p.getLocation(), left);
+        p.sendMessage(MM.deserialize("<gray>Gave you a fresh <white>" + what + "</white>."));
+    }
+
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getInventory().getHolder() instanceof Holder holder)) return;
         e.setCancelled(true);
         if (e.getClickedInventory() == null || !e.getClickedInventory().equals(e.getInventory())) return;
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        int slot = e.getSlot();
+        int slot = e.getSlot(), page = holder.page;
 
-        switch (slot) {
-            case 47 -> {
-                for (ItemStack left : p.getInventory().addItem(items.create()).values())
-                    p.getWorld().dropItemNaturally(p.getLocation(), left);
-                p.sendMessage(MM.deserialize("<gray>Gave you a fresh <white>Potent Pound</white>."));
-                return;
-            }
-            case 48 -> {
-                ItemStack held = p.getInventory().getItemInMainHand();
-                if (!items.isPotend(held)) {
-                    p.sendMessage(MM.deserialize("<red>Hold the Potent Pound first."));
-                } else {
-                    p.getInventory().setItemInMainHand(items.rebuild(held));
-                    p.sendMessage(MM.deserialize("<gray>Your Potent Pound was refreshed."));
-                }
-                return;
-            }
-            case 50 -> {
-                plugin.reloadConfig();
-                plugin.reloadLive();
-                open(p);
-                p.sendMessage(MM.deserialize("<gray>Config reloaded from disk."));
-                return;
-            }
-            case 53 -> {
-                p.closeInventory();
-                return;
-            }
-            default -> { }
+        if (slot == 53) {
+            p.closeInventory();
+            return;
         }
-        Setting s = bySlot.get(slot);
+        if (slot == 50) {
+            plugin.reloadConfig();
+            plugin.reloadLive();
+            open(p, page);
+            p.sendMessage(MM.deserialize("<gray>Config reloaded from disk."));
+            return;
+        }
+        if (page == 0) {
+            switch (slot) {
+                case 43 -> { open(p, 1); return; }
+                case 47 -> { give(p, items.create(), "Potent Pound"); return; }
+                case 48 -> {
+                    ItemStack held = p.getInventory().getItemInMainHand();
+                    if (!items.isPotend(held)) {
+                        p.sendMessage(MM.deserialize("<red>Hold the Potent Pound first."));
+                    } else {
+                        p.getInventory().setItemInMainHand(items.rebuild(held));
+                        p.sendMessage(MM.deserialize("<gray>Your Potent Pound was refreshed."));
+                    }
+                    return;
+                }
+                default -> { }
+            }
+        } else {
+            switch (slot) {
+                case 45 -> { open(p, 0); return; }
+                case 46 -> { give(p, plugin.shadeItem().create(), "Shade Sheath"); return; }
+                case 49 -> { plugin.shade().reset(p); return; }
+                case 51 -> {
+                    plugin.shade().resetAll();
+                    p.sendMessage(MM.deserialize("<gray>Everyone's Shade aura and halo were reset."));
+                    return;
+                }
+                default -> { }
+            }
+        }
+        Setting s = pages.get(page).get(slot);
         if (s == null) return;
         change(s, e.getClick());
         holder.inv.setItem(slot, render(s));

@@ -1,7 +1,7 @@
-# Potent Pound (Paper 26.2, Java 25)
+# Potent Pound + Shade Sheath (Paper 26.2, Java 25)
 
 Upload every file in this folder to the root of your GitHub repo (replace the old ones).
 The "Build jar" workflow runs on every upload -> Actions -> latest run -> Artifacts -> PotendPound-jar.
 
-Commands (op): /potentpound gui | give [player] | reload | chamber | village | boss | undo   (aliases: /potendpound, /pp)
-Resource pack: PotendPound-ResourcePack.zip (weapon model, font, Trial Protector boss models).
+Commands (op): /potentpound gui | give [player] | reload | chamber | village | boss | shade give|reset | undo
+(aliases: /potendpound, /pp)
